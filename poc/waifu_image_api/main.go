@@ -3,11 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/yusufpapurcu/maid-bot/poc/waifu_image_api/internal/dto"
+	gomail "gopkg.in/gomail.v2"
 )
+
+const EMAIL_PASS = "***"
 
 func main() {
 	params := QueryParameters{
@@ -46,7 +51,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(waifuList.Images[0].URL)
+	send(waifuList.Images[0].URL, waifuList.Images[0].Width, waifuList.Images[0].Height)
 
 }
 
@@ -59,6 +64,27 @@ func createURL(params QueryParameters) string {
 
 	res.RawQuery = query.Encode()
 	return res.String()
+}
+
+func send(waifu_url string, width, height int) {
+	// Configuration
+	from := "yusufturhanp@gmail.com"
+	pass := EMAIL_PASS
+	to := "yusufpapurcu@gmail.com"
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", from)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", "おはようございます Master "+time.Now().Format("01/02/2006"))
+	m.SetBody("text/html", fmt.Sprintf(`<img src="%s" alt="おはようございます Master" width="%d" height="%d">`, waifu_url, width, height))
+
+	d := gomail.NewDialer("smtp.gmail.com", 587, from, pass)
+
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
+	}
+
+	log.Println("Successfully sended to " + to)
 }
 
 type QueryParameters struct {
