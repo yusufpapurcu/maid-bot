@@ -56,7 +56,7 @@ func main() {
 }
 
 func createURL(params QueryParameters) string {
-	res, _ := url.Parse("https://api.waifu.im/random")
+	res, _ := url.Parse("https://api.waifu.im/search")
 	res.ForceQuery = true
 
 	query := res.Query()
