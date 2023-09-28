@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/yusufpapurcu/maid-bot/poc/waifu_image_api/internal/dto"
@@ -15,7 +17,21 @@ import (
 const EMAIL_PASS = "***"
 
 func main() {
-	params := QueryParameters{
+
+	var waifuList dto.RandomWaifuList
+	for {
+		waifuList = getRandomWaifu()
+		if isWaifuUninque(waifuList.Images[0].URL) {
+			break
+		}
+	}
+
+	send(waifuList.Images[0].URL, waifuList.Images[0].Width, waifuList.Images[0].Height)
+	writeWaifuUrlToCache(waifuList.Images[0].URL)
+}
+
+func getRandomWaifu() dto.RandomWaifuList {
+	params := dto.QueryParameters{
 		SelectedTags: []string{},
 		ExcludedTags: []string{},
 		IsNSFW:       false,
@@ -51,11 +67,10 @@ func main() {
 		panic(err)
 	}
 
-	send(waifuList.Images[0].URL, waifuList.Images[0].Width, waifuList.Images[0].Height)
-
+	return waifuList
 }
 
-func createURL(params QueryParameters) string {
+func createURL(params dto.QueryParameters) string {
 	res, _ := url.Parse("https://api.waifu.im/search")
 	res.ForceQuery = true
 
@@ -87,12 +102,50 @@ func send(waifu_url string, width, height int) {
 	log.Println("Successfully sended to " + to)
 }
 
-type QueryParameters struct {
-	SelectedTags []string
-	ExcludedTags []string
-	IsNSFW       bool
-	Gif          bool
-	OrderBy      string
-	Orientation  string
-	Many         bool
+func isWaifuUninque(url string) bool {
+	filename := "uniquness.cache"
+	var f *os.File
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		f, err = os.Create(filename)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		f, _ = os.OpenFile(filename, os.O_RDWR|os.O_APPEND, 0660)
+	}
+
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	for {
+		line, _, err := r.ReadLine()
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+
+		if url == string(line) {
+			return false
+		}
+	}
+	return true
+}
+
+func writeWaifuUrlToCache(url string) {
+	filename := "uniquness.cache"
+	var f *os.File
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		f, err = os.Create(filename)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		f, _ = os.OpenFile(filename, os.O_RDWR|os.O_APPEND, 0660)
+	}
+
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	w.WriteString(url + "\n")
+	w.Flush()
 }

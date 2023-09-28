@@ -24,3 +24,13 @@ type RandomWaifuList struct {
 		} `json:"tags"`
 	} `json:"images"`
 }
+
+type QueryParameters struct {
+	SelectedTags []string
+	ExcludedTags []string
+	IsNSFW       bool
+	Gif          bool
+	OrderBy      string
+	Orientation  string
+	Many         bool
+}
